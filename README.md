@@ -26,9 +26,38 @@ podman-compose up -d
 Now start app with dev mode service disabled
 
 ```bash
-mvn \
+mvn quarkus:dev \
   -Dquarkus.devservices.enabled=false \
-  -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2 quarkus:dev
+  -Dmp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
+```
+
+## RHOSAK
+
+Try running Kafka, Registry as cloud managed services:
+
+- [Red Hat Kafka Managed Service](https://console.redhat.com/beta/application-services/streams/kafkas)
+- [Red Hat Registry Managed Service](https://console.redhat.com/beta/application-services/service-registry)
+
+Login, create a Kafka instance, movies Topic and Schema Registry. Add a service account that has read-write access to these.
+
+Export Env Vars from console
+
+```bash
+export BOOTSTRAP_SERVER=moives-c-sv--qt--tmi--nl-lg.bf2.kafka.rhcloud.com:443
+export CLIENT_ID=srvc-acct-c7541c66-513f-4b77-96aa-8a30cd015370
+export CLIENT_SECRET=<secret>
+export OAUTH_TOKEN_ENDPOINT_URI=https://identity.api.openshift.com/auth/realms/rhoas/protocol/openid-connect/token
+export REGISTRY_URL=https://bu98.serviceregistry.rhcloud.com/t/4130e1e8-2678-4c33-b4da-e87959840d57/apis/registry/v2
+export OAUTH_SERVER_URL=https://identity.api.openshift.com/auth
+export OAUTH_REALM=rhoas
+```
+
+Now start the app using the `rhosak` profile vars in `application.properties`
+
+```bash
+mvn quarkus:dev \
+  -Dquarkus.devservices.enabled=false \
+  -Dquarkus.profile=dev,rhosak
 ```
 
 ## Testing
@@ -51,4 +80,10 @@ curl --header "Content-Type: application/json" \
   --request POST \
   --data '{"title":"The Dark Knight","year":2008}' \
   http://localhost:8080/movies
+```
+
+Try some performance testing
+
+```bash
+hey -t 30 -c 100 -n 10000 -H "Content-Type: application/json;charset=utf-8" -m POST -d '{"title":"The Godfather","year":1972}' http://localhost:8080/movies
 ```
